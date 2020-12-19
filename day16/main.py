@@ -172,15 +172,23 @@ print("Answer 1: " + str(error_rate))
 
 # Answer 2
 num_valid = len(valid_tickets)
-print("There are " + str(num_valid) + " valid tickets")
 
 # A dictionary which uses the detail_name as the key, 
 # and the value is a list of column index which have been ruled out
 invalid_possibilities = {}
 
-# Build up the keys of the dictionry
+# A dictionary which stores the set of available answers against the detail_name
+available_answers = {}
+
+# A dictionary which stores the column against the detail_name
+final_answer = {}
+
+# Build up the dictionaries
 for detail in Ticket.valid_ticket_details:
     invalid_possibilities.update({ detail.name : [] })
+    available_answers.update({ detail.name : [] })
+    final_answer.update({ detail.name : [] })
+
 
 # For each ticket...
 for ticket in valid_tickets:
@@ -199,13 +207,63 @@ for ticket in valid_tickets:
                 invalid_possibilities[detail.name].append(col)
 
 
-# Now, search the dictionary
+# Now, search the dictionary, and get a set for each key showing only possible possibilities
+all_possible = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 for key in invalid_possibilities.keys():
 
-    all_possibilities = set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+    all_possibilities = set(all_possible)
     cannot_be = set(invalid_possibilities[key])
+    can_be = all_possibilities.difference(cannot_be)
 
-    can_be = all_possibilities.intersection(cannot_be)
+    # Set the value to the set of possible answers
+    available_answers[key] = can_be
 
-    print (key + " CANNOT BE " + str(cannot_be))
-    print (key + " CAN BE " + str(can_be))
+
+# Loop, assigning the only valid row, until everything is assigned
+loop_counter = 0
+while True:
+
+    loop_counter += 1
+
+    if (loop_counter >= 21):
+        break
+
+    lowest_key = ""
+    lowest_entry_count = len(all_possible) + 1
+
+    # Look for the set with the lowest number of possibilities
+    for key in available_answers.keys():
+        num_valid = len(available_answers[key])
+        if (num_valid < lowest_entry_count):
+            lowest_entry_count = num_valid
+            lowest_key = key
+
+    # Grab the value from the set
+    possible_val = next(iter(list(available_answers[lowest_key])))
+
+    # This is now the answer to this key
+    final_answer[lowest_key] = possible_val
+
+    # Remove this key from the dictionaries
+    del available_answers[lowest_key]
+
+    # Remove this value from the sets of all other dict entries
+    for key in available_answers.keys():
+        if (possible_val in available_answers[key]):
+            available_answers[key].remove(possible_val)
+
+
+# Now we have a dictionary which stores which column index of ticket values belong to which ticket detail
+# Look for each ticket detail starting with the word 'departure' and get the that details value on my ticket
+# multiply these togetether
+dept_values = []
+for key in final_answer.keys():
+    if ("departure" in key):
+        column = final_answer[key]
+        dept_values.append(own_ticket.values[column])
+
+print(dept_values)
+
+final_dept_product = dept_values[0]
+for i in range(1, len(dept_values)):
+    final_dept_product *= dept_values[i]
